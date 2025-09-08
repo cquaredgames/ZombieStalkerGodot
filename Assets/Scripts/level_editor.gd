@@ -71,7 +71,7 @@ func _ready():
 
 	# Initialize PickupSelector dropdown control
 	pickup_selector.clear()
-	
+	pickup_selector.add_separator("Pickups")
 	pickup_selector.add_icon_item(
 		preload("res://Assets/Sprites/pickups/health_pickup.png"), "Health", 0)
 	pickup_selector.add_icon_item(
@@ -81,13 +81,14 @@ func _ready():
 	pickup_selector.add_item("Empty", 9)
 	
 	# Initialize EntitySelector dropdown control
-	entity_selector.clear()
-	entity_selector.add_icon_item(
-		preload("res://Assets/Sprites/tiles/start_tile.png"), "Start of Level", 0)
-	entity_selector.add_icon_item(
-		preload("res://Assets/Sprites/tiles/end_tile.png"), "End of Level", 1)
-	entity_selector.add_icon_item(
-		preload("res://Assets/Sprites/player.png"), "Enemy", 2)
+	pickup_selector.add_separator("Entities")
+	#pickup_selector.clear()
+	pickup_selector.add_icon_item(
+		preload("res://Assets/Sprites/tiles/start_tile.png"), "Player Start", 20)
+	pickup_selector.add_icon_item(
+		preload("res://Assets/Sprites/tiles/end_tile.png"), "Level End", 21)
+	pickup_selector.add_icon_item(
+		preload("res://Assets/Sprites/player.png"), "Enemy", 22)
 	
 	current_tile_id = tile_selector.get_item_id(1)
 	# Connect dropdown changes
