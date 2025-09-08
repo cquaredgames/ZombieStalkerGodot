@@ -2,10 +2,13 @@ extends Control
 
 @onready var tile_selector: OptionButton = %TileSelector
 @onready var pickup_selector: OptionButton = %PickupSelector
+@onready var entity_selector: OptionButton = %EntitySelector
 @onready var tilemap: TileMapLayer = $TileMapLayer
+@onready var current_screen_label: Label = $%CurrentScreenCoords
 
 var current_screen := Vector2i(0, 0)
 const SCREEN_SIZE = Vector2i(20, 10)
+const MAP_SCREENS := Vector2i(6, 4)  # 6 across, 4 down
 
 var level_data = {
 	"screens": {},
@@ -41,6 +44,7 @@ func _ready():
 	]
 	
 	%CurrentScreenCoords.text = _get_current_screen_key()
+	update_screen_buttons()
 	
 	# Initialize TileSelector dropdown control
 	tile_selector.clear()
@@ -75,6 +79,15 @@ func _ready():
 	pickup_selector.add_icon_item(
 		preload("res://Assets/Sprites/pickups/key_pickup.png"), "Key", 2)
 	pickup_selector.add_item("Empty", 9)
+	
+	# Initialize EntitySelector dropdown control
+	entity_selector.clear()
+	entity_selector.add_icon_item(
+		preload("res://Assets/Sprites/tiles/start_tile.png"), "Start of Level", 0)
+	entity_selector.add_icon_item(
+		preload("res://Assets/Sprites/tiles/end_tile.png"), "End of Level", 1)
+	entity_selector.add_icon_item(
+		preload("res://Assets/Sprites/player.png"), "Enemy", 2)
 	
 	current_tile_id = tile_selector.get_item_id(1)
 	# Connect dropdown changes
@@ -159,31 +172,44 @@ func _on_fill_screen_button_pressed() -> void:
 	for y in range(SCREEN_SIZE.y):
 		for x in range(SCREEN_SIZE.x):
 			tilemap.set_cell(Vector2i(x,y), current_tile_id, Vector2i(0,0))
-		
+
+func update_screen_buttons() -> void:
+	%LeftButton.disabled = current_screen.x <= 0
+	%RightButton.disabled = current_screen.x >= MAP_SCREENS.x - 1
+	%UpButton.disabled = current_screen.y <= 0
+	%DownButton.disabled = current_screen.y >= MAP_SCREENS.y - 1		
 	
 func _on_left_pressed() -> void:
-	save_current_screen()
-	current_screen.x -= 1
-	%CurrentScreenCoords.text = _get_current_screen_key()
-	load_current_screen()
+	if current_screen.x > 0:
+		save_current_screen()
+		current_screen.x -= 1
+		current_screen_label.text = _get_current_screen_key()
+		load_current_screen()
+	update_screen_buttons()
 
 func _on_right_pressed() -> void:
-	save_current_screen()
-	current_screen.x += 1
-	%CurrentScreenCoords.text = _get_current_screen_key()
-	load_current_screen()
+	if current_screen.x < SCREEN_SIZE.x - 1:
+		save_current_screen()
+		current_screen.x += 1
+		current_screen_label.text = _get_current_screen_key()
+		load_current_screen()
+	update_screen_buttons()
 
 func _on_up_pressed() -> void:
-	save_current_screen()
-	current_screen.y -= 1
-	%CurrentScreenCoords.text = _get_current_screen_key()
-	load_current_screen()
+	if current_screen.y > 0:
+		save_current_screen()
+		current_screen.y -= 1
+		current_screen_label.text = _get_current_screen_key()
+		load_current_screen()
+	update_screen_buttons()
 
 func _on_down_pressed() -> void:
-	save_current_screen()
-	current_screen.y += 1
-	%CurrentScreenCoords.text = _get_current_screen_key()
-	load_current_screen()
+	if current_screen.y < MAP_SCREENS.y - 1:
+		save_current_screen()
+		current_screen.y += 1
+		current_screen_label.text = _get_current_screen_key()
+		load_current_screen()
+	update_screen_buttons()
 
 func _get_current_screen_key():
 	return str(current_screen.x) + "," + str(current_screen.y)
@@ -191,9 +217,9 @@ func _get_current_screen_key():
 func save_current_screen() -> void:
 	var key = _get_current_screen_key()
 	var data = []
-	for y in range(SCREEN_SIZE.x):
+	for y in range(SCREEN_SIZE.y):
 		var row = []
-		for x in range(SCREEN_SIZE.y):
+		for x in range(SCREEN_SIZE.x):
 			row.append(tilemap.get_cell_source_id(Vector2i(x,y)))
 		data.append(row)
 	level_data["screens"][key] = data
