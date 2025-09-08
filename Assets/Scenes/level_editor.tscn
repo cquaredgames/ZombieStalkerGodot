@@ -213,6 +213,14 @@ theme_override_font_sizes/font_size = 8
 text = "FILL
 "
 
+[node name="CurrentScreenCoords" type="Label" parent="CanvasLayer/ColorRect"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 149.103
+offset_top = 5.75546
+offset_right = 189.103
+offset_bottom = 28.7555
+
 [connection signal="item_selected" from="CanvasLayer/ColorRect/TileSelectorLabel/TileSelector" to="." method="_on_tile_selected"]
 [connection signal="item_selected" from="CanvasLayer/ColorRect/PickupSelectorLabel/PickupSelector" to="." method="_on_pickup_selected"]
 [connection signal="pressed" from="CanvasLayer/ColorRect/ChangeScreenControls/LeftButton" to="." method="_on_left_pressed"]

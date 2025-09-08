@@ -40,6 +40,8 @@ func _ready():
 		[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 	]
 	
+	%CurrentScreenCoords.text = _get_current_screen_key()
+	
 	# Initialize TileSelector dropdown control
 	tile_selector.clear()
 	tile_selector.add_separator("Barriers")
@@ -160,16 +162,52 @@ func _on_fill_screen_button_pressed() -> void:
 		
 	
 func _on_left_pressed() -> void:
-	pass # Replace with function body.
-
+	save_current_screen()
+	current_screen.x -= 1
+	%CurrentScreenCoords.text = _get_current_screen_key()
+	load_current_screen()
 
 func _on_right_pressed() -> void:
-	pass # Replace with function body.
-
+	save_current_screen()
+	current_screen.x += 1
+	%CurrentScreenCoords.text = _get_current_screen_key()
+	load_current_screen()
 
 func _on_up_pressed() -> void:
-	pass # Replace with function body.
-
+	save_current_screen()
+	current_screen.y -= 1
+	%CurrentScreenCoords.text = _get_current_screen_key()
+	load_current_screen()
 
 func _on_down_pressed() -> void:
-	pass # Replace with function body.
+	save_current_screen()
+	current_screen.y += 1
+	%CurrentScreenCoords.text = _get_current_screen_key()
+	load_current_screen()
+
+func _get_current_screen_key():
+	return str(current_screen.x) + "," + str(current_screen.y)
+
+func save_current_screen() -> void:
+	var key = _get_current_screen_key()
+	var data = []
+	for y in range(SCREEN_SIZE.x):
+		var row = []
+		for x in range(SCREEN_SIZE.y):
+			row.append(tilemap.get_cell_source_id(Vector2i(x,y)))
+		data.append(row)
+	level_data["screens"][key] = data
+	print("saved screen", key)
+	# TODO: save pickups to json file too
+	
+func load_current_screen():
+	var key = _get_current_screen_key()
+	tilemap.clear()
+	if key in level_data["screens"]:
+		var data = level_data["screens"][key]
+		for y in range(data.size()):
+			for x in range(data[y].size()):
+				var tile_id = data[y][x]
+				#if tile_id >= 0 && tile_id <10:
+				tilemap.set_cell(Vector2i(x,y), tile_id, Vector2i(0,0))
+				
