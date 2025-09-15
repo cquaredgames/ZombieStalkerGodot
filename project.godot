@@ -13,15 +13,22 @@ config_version=5
 config/name="ZombieStalker"
 run/main_scene="uid://dukt2ltdyys4e"
 config/features=PackedStringArray("4.4", "Forward Plus")
-config/icon="res://icon.svg"
+boot_splash/image="uid://dhjy66w6scrrl"
+config/icon="uid://bvaenxmrngxmk"
+config/windows_native_icon="res://title.ico"
+
+[autoload]
+
+SteamController="*res://Assets/Scripts/steam/steam_controller.gd"
 
 [display]
 
 window/size/viewport_width=320
 window/size/viewport_height=200
 window/size/window_width_override=1280
-window/size/window_height_override=800
+window/size/window_height_override=960
 window/stretch/mode="viewport"
+window/stretch/aspect="ignore"
 window/stretch/scale_mode="integer"
 
 [input]

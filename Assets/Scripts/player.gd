@@ -10,7 +10,6 @@ var player_direction = Direction.RIGHT
 func _physics_process(delta: float) -> void:
 	var input_vector = Vector2.ZERO
 	
-	
 	if Input.is_action_pressed("move_up"):
 		input_vector.y -= 1
 		player_direction = Direction.UP

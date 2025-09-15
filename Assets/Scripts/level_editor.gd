@@ -2,13 +2,13 @@ extends Control
 
 @onready var tile_selector: OptionButton = %TileSelector
 @onready var pickup_selector: OptionButton = %PickupSelector
-@onready var entity_selector: OptionButton = %EntitySelector
 @onready var tilemap: TileMapLayer = $TileMapLayer
+@onready var markers_layer: TileMapLayer = $MarkersLayer
 @onready var current_screen_label: Label = $%CurrentScreenCoords
 
 var current_screen := Vector2i(0, 0)
 const SCREEN_SIZE = Vector2i(20, 10)
-const MAP_SCREENS := Vector2i(6, 4)  # 6 across, 4 down
+const MAP_SCREENS := Vector2i(4, 6)  # 6 across, 4 down
 
 var level_data = {
 	"screens": {},
@@ -17,17 +17,22 @@ var level_data = {
 
 var brush_mode: String = "floor"
 var current_tile_id: int = 1
+var current_marker_id: int = 0
 var is_painting := false
 var occuppied_cells = {}
 
-
 enum PickupType {HEALTH, AMMO, KEY}
+enum EntityType {
+	# Pickups
+	HEALTH_PICKUP, AMMO_PICKUP, KEY_PICKUP, 
+	# Entities
+	PLAYER_START = 20, END_OF_LEVEL = 21, ENEMY = 22}
 var pickup_scenes = {
-	PickupType.AMMO: preload("res://Assets/Scenes/Pickups/PickupAmmo.tscn"),
-	PickupType.HEALTH: preload("res://Assets/Scenes/Pickups/PickupHealth.tscn"),
-	PickupType.KEY: preload("res://Assets/Scenes/Pickups/PickupKey.tscn")
+	PickupType.AMMO: preload("res://Assets/Sprites/pickups/ammo_pickup.png"),
+	PickupType.HEALTH: preload("res://Assets/Sprites/pickups/health_pickup.png"),
+	PickupType.KEY: preload("res://Assets/Sprites/pickups/key_pickup.png"),
 }
-var current_pickup_type: PickupType = PickupType.HEALTH
+var current_entity_type = PickupType.HEALTH
 
 func _ready():
 	level_data["screens"]["0,0"] = [
@@ -71,6 +76,7 @@ func _ready():
 
 	# Initialize PickupSelector dropdown control
 	pickup_selector.clear()
+	pickup_selector.add_item("Empty", 9)
 	pickup_selector.add_separator("Pickups")
 	pickup_selector.add_icon_item(
 		preload("res://Assets/Sprites/pickups/health_pickup.png"), "Health", 0)
@@ -78,7 +84,7 @@ func _ready():
 		preload("res://Assets/Sprites/pickups/ammo_pickup.png"), "Ammo", 1)
 	pickup_selector.add_icon_item(
 		preload("res://Assets/Sprites/pickups/key_pickup.png"), "Key", 2)
-	pickup_selector.add_item("Empty", 9)
+	
 	
 	# Initialize EntitySelector dropdown control
 	pickup_selector.add_separator("Entities")
@@ -127,23 +133,24 @@ func _place_pickup(pos: Vector2) -> void:
 	var half_tile: Vector2 = tile_size_v2 * 0.5
 	var pickup_pos := cell_origin + half_tile
 	
+	
 	if occuppied_cells.has(cell):
 		var existing_pickup = occuppied_cells[cell]
 		# If same type, do nothing
 		if existing_pickup.pickup_type == pickup_type_to_name(
-			current_pickup_type):
+			current_entity_type):
 			return
 		# Otherwise, replace it
 		existing_pickup.queue_free()
 		occuppied_cells.erase(cell)
 	
-	if pickup_scenes.has(current_pickup_type):
-		var scene: PackedScene = pickup_scenes[current_pickup_type]
-		var pickup = scene.instantiate()
-		var tile_size = tilemap.tile_set.tile_size
-		pickup.position = cell_origin    # center of the cell
-		tilemap.add_sibling(pickup)
-		occuppied_cells[cell] = pickup
+	#if pickup_scenes.has(current_entity_type):
+		##var scene: PackedScene = pickup_scenes[current_enity_type]
+		##var pickup = scene.instantiate()
+		#var tile_size = tilemap.tile_set.tile_size
+		#pickup.position = cell_origin    # center of the cell
+		#tilemap.add_sibling(pickup)
+		#occuppied_cells[cell] = pickup
 
 func _on_tile_selected(index: int) -> void:
 	# store which tile the user picked
@@ -151,12 +158,7 @@ func _on_tile_selected(index: int) -> void:
 	is_painting = false
 	
 func _on_pickup_selected(index: int) -> void:
-	var pickup_map = {
-		0: "health",
-		1: "ammo",
-		2: "key"
-	}
-	current_pickup_type = index# pickup_map[index]
+	current_pickup_type = pickup_selector.get_item_id(index)
 	is_painting = false
 
 func pickup_type_to_name(t: PickupType) -> String:
@@ -165,7 +167,6 @@ func pickup_type_to_name(t: PickupType) -> String:
 		PickupType.AMMO: return "ammo"
 		PickupType.KEY: return "key"
 		_: return "unknown"
-
 
 func _on_fill_screen_button_pressed() -> void:
 	if current_tile_id == -1:
