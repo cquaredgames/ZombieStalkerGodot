@@ -1,9 +1,9 @@
 [gd_scene load_steps=5 format=4 uid="uid://dukt2ltdyys4e"]
 
-[ext_resource type="Script" uid="uid://y6d0qkqrlov8" path="res://Assets/Scripts/prototype_game.gd" id="1_lcp10"]
-[ext_resource type="TileSet" uid="uid://cpihtc557373n" path="res://Assets/TileSets/tile_set.tres" id="1_pfbgl"]
-[ext_resource type="PackedScene" uid="uid://f8702suistek" path="res://Assets/Scenes/player.tscn" id="2_pfbgl"]
-[ext_resource type="Script" uid="uid://d18ak73wruahc" path="res://Assets/Scripts/steam/steam_avatar.gd" id="4_pb48a"]
+[ext_resource type="Script" uid="uid://y6d0qkqrlov8" path="res://Assets/scripts/prototype_game.gd" id="1_lcp10"]
+[ext_resource type="TileSet" uid="uid://cpihtc557373n" path="res://Assets/tilesets/tile_set.tres" id="1_pfbgl"]
+[ext_resource type="PackedScene" uid="uid://f8702suistek" path="res://Assets/scenes/player.tscn" id="2_pfbgl"]
+[ext_resource type="Script" uid="uid://d18ak73wruahc" path="res://Assets/scripts/steam/steam_avatar.gd" id="4_pb48a"]
 
 [node name="PrototypeGame" type="Node2D"]
 script = ExtResource("1_lcp10")

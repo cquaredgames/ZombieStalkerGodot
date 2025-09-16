@@ -1,7 +1,7 @@
 extends Control
 
 @onready var tile_selector: OptionButton = %TileSelector
-@onready var pickup_selector: OptionButton = %PickupSelector
+@onready var entity_selector: OptionButton = %EntitySelector
 @onready var tilemap: TileMapLayer = $TileMapLayer
 @onready var markers_layer: TileMapLayer = $MarkersLayer
 @onready var current_screen_label: Label = $%CurrentScreenCoords
@@ -12,7 +12,7 @@ const MAP_SCREENS := Vector2i(4, 6)  # 6 across, 4 down
 
 var level_data = {
 	"screens": {},
-	"pickups": {}
+	"entities": {}
 }
 
 var brush_mode: String = "floor"
@@ -75,28 +75,28 @@ func _ready():
 	tile_selector.add_item("Blank", 99)
 
 	# Initialize PickupSelector dropdown control
-	pickup_selector.clear()
-	pickup_selector.add_item("Empty", 9)
-	pickup_selector.add_separator("Pickups")
-	pickup_selector.add_icon_item(
+	entity_selector.clear()
+	entity_selector.add_item("Empty", 9)
+	entity_selector.add_separator("Pickups")
+	entity_selector.add_icon_item(
 		preload("res://Assets/Sprites/pickups/health_pickup.png"), "Health", 0)
-	pickup_selector.add_icon_item(
+	entity_selector.add_icon_item(
 		preload("res://Assets/Sprites/pickups/ammo_pickup.png"), "Ammo", 1)
-	pickup_selector.add_icon_item(
+	entity_selector.add_icon_item(
 		preload("res://Assets/Sprites/pickups/key_pickup.png"), "Key", 2)
 	
 	
 	# Initialize EntitySelector dropdown control
-	pickup_selector.add_separator("Entities")
-	#pickup_selector.clear()
-	pickup_selector.add_icon_item(
-		preload("res://Assets/Sprites/tiles/start_tile.png"), "Player Start", 20)
-	pickup_selector.add_icon_item(
-		preload("res://Assets/Sprites/tiles/end_tile.png"), "Level End", 21)
-	pickup_selector.add_icon_item(
+	entity_selector.add_separator("Entities")
+	#entity_selector.clear()
+	entity_selector.add_icon_item(
+		preload("res://Assets/sprites/entities/start_tile.png"), "Player Start", 20)
+	entity_selector.add_icon_item(
+		preload("res://Assets/sprites/entities/end_tile.png"), "Level End", 21)
+	entity_selector.add_icon_item(
 		preload("res://Assets/Sprites/player.png"), "Enemy", 22)
 	
-	current_tile_id = tile_selector.get_item_id(1)
+	current_tile_id = tile_selector.get_item_id(2)
 	# Connect dropdown changes
 	#tile_selector.item_selected.connect(_on_tile_selected)
 
@@ -110,7 +110,9 @@ func _input(event: InputEvent):
 				_paint_tile(event.position)
 				print(event.position)
 		if event.button_index == MOUSE_BUTTON_RIGHT:
-			_place_pickup(event.position)
+			is_painting = event.pressed
+			if event.pressed:
+				_place_pickup(event.position)
 				
 	# Keep painting while moving mouse
 	if event is InputEventMouseMotion and is_painting:
@@ -123,26 +125,47 @@ func _paint_tile(mouse_pos: Vector2):
 	# Paint the selected tile
 	if current_tile_id >= 0:
 		tilemap.set_cell(cell, current_tile_id, Vector2i(0,0))
+		level_data.screens[_get_current_screen_key()]["()"]
 		
-func _place_pickup(pos: Vector2) -> void:
-	#var local_pos: Vector2 = tilemap.to_local(pos)
-	var cell: Vector2i = tilemap.local_to_map(pos)
-	var cell_origin: Vector2 = tilemap.map_to_local(cell)  # top-left of the cell in local space
+#func _place_pickup(pos: Vector2) -> void:
+func _place_pickup(cell: Vector2i):
+	# Remove old pickup if one exists at this cell
+	for i in range(level_data["pickups"].size()):
+		var pickup = level_data["pickups"][i]
+		if pickup["screen"] == current_screen and pickup["cell"] == cell:
+			level_data["pickups"].remove_at(i)
+			break
 	
-	var tile_size_v2: Vector2 = Vector2(tilemap.tile_set.tile_size)  # cast Vector2i -> Vector2
-	var half_tile: Vector2 = tile_size_v2 * 0.5
-	var pickup_pos := cell_origin + half_tile
+	# Add new pickup
+	var new_pickup = {
+		"screen": [current_screen.x, current_screen.y],
+		"cell": [cell.x, cell.y],
+		"type": str(current_entity_type) # e.g. "HEALTH", "AMMO", "KEY"
+	}
+	level_data["pickups"].append(new_pickup)
 	
+	print("Placed pickup: ", new_pickup)
+
+	##var local_pos: Vector2 = tilemap.to_local(pos)
+	#var cell: Vector2i = markers_layer.local_to_map(pos)
+	#var cell_origin: Vector2 = markers_layer.map_to_local(cell)  # top-left of the cell in local space
+	#
+	#var tile_size_v2: Vector2 = Vector2(markers_layer.tile_set.tile_size)  # cast Vector2i -> Vector2
+	#var half_tile: Vector2 = tile_size_v2 * 0.5
+	#var pickup_pos := cell_origin + half_tile
+	#
+	#if current_entity_type >= 0:
+		#markers_layer.set_cell(cell, current_entity_type, Vector2i(0,0))
 	
-	if occuppied_cells.has(cell):
-		var existing_pickup = occuppied_cells[cell]
-		# If same type, do nothing
-		if existing_pickup.pickup_type == pickup_type_to_name(
-			current_entity_type):
-			return
-		# Otherwise, replace it
-		existing_pickup.queue_free()
-		occuppied_cells.erase(cell)
+	#if occuppied_cells.has(cell):
+		#var existing_pickup = occuppied_cells[cell]
+		## If same type, do nothing
+		#if existing_pickup.pickup_type == pickup_type_to_name(
+			#current_entity_type):
+			#return
+		## Otherwise, replace it
+		#existing_pickup.queue_free()
+		#occuppied_cells.erase(cell)
 	
 	#if pickup_scenes.has(current_entity_type):
 		##var scene: PackedScene = pickup_scenes[current_enity_type]
@@ -158,7 +181,8 @@ func _on_tile_selected(index: int) -> void:
 	is_painting = false
 	
 func _on_pickup_selected(index: int) -> void:
-	current_pickup_type = pickup_selector.get_item_id(index)
+	current_entity_type = entity_selector.get_item_id(index)
+	$CanvasLayer/ColorRect/Label.text = str(current_entity_type)
 	is_painting = false
 
 func pickup_type_to_name(t: PickupType) -> String:
@@ -228,7 +252,7 @@ func save_current_screen() -> void:
 	print("saved screen", key)
 	# TODO: save pickups to json file too
 	
-func load_current_screen():
+func load_current_screen() -> void:
 	var key = _get_current_screen_key()
 	tilemap.clear()
 	if key in level_data["screens"]:
@@ -239,3 +263,30 @@ func load_current_screen():
 				#if tile_id >= 0 && tile_id <10:
 				tilemap.set_cell(Vector2i(x,y), tile_id, Vector2i(0,0))
 				
+func save_level() -> void:
+	var file = FileAccess.open("res://testlevel.json", FileAccess.WRITE)
+	if file:
+		var json_text := JSON.stringify(level_data, "\t") # pretty-print with tabs
+		file.store_string(json_text)
+		file.close()
+		print("Level saved to user://testlevel.json")
+	
+
+func load_level() -> void:
+	var file = FileAccess.open("user://testlevel.json", FileAccess.READ)
+	if file:
+		var json_text := file.get_as_text()
+		file.close()
+		
+		var json = JSON.new()
+		var error = json.parse(json_text)
+		
+		if error == OK:
+			level_data = json.data
+			print("Level loaded successfully!")
+		else:
+			print("Failed to parse level file: ", error)
+
+
+func _on_save_level_pressed() -> void:
+	save_level()

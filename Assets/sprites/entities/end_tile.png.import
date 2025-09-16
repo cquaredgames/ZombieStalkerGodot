@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c5s1grc76n4oc"
-path="res://.godot/imported/start_tile.png-99387bd00dda19f52eacce97f8b79179.ctex"
+uid="uid://w3gpv7k2r8p"
+path="res://.godot/imported/end_tile.png-dbedb5b1ccd0c8cea32eb26e7ded681a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/Sprites/tiles/start_tile.png"
-dest_files=["res://.godot/imported/start_tile.png-99387bd00dda19f52eacce97f8b79179.ctex"]
+source_file="res://Assets/sprites/entities/end_tile.png"
+dest_files=["res://.godot/imported/end_tile.png-dbedb5b1ccd0c8cea32eb26e7ded681a.ctex"]
 
 [params]
 

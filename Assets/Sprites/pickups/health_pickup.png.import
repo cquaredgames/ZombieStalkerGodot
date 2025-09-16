@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://d1qejfrgnqgvd"
-path="res://.godot/imported/health_pickup.png-cc15ae468917ad8c4bc66260d09a6505.ctex"
+path="res://.godot/imported/health_pickup.png-5ba080f19da840109fb0dc5c1ec9b26f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/Sprites/pickups/health_pickup.png"
-dest_files=["res://.godot/imported/health_pickup.png-cc15ae468917ad8c4bc66260d09a6505.ctex"]
+source_file="res://Assets/sprites/pickups/health_pickup.png"
+dest_files=["res://.godot/imported/health_pickup.png-5ba080f19da840109fb0dc5c1ec9b26f.ctex"]
 
 [params]
 

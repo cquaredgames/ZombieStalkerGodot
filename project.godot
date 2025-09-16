@@ -13,13 +13,14 @@ config_version=5
 config/name="ZombieStalker"
 run/main_scene="uid://dukt2ltdyys4e"
 config/features=PackedStringArray("4.4", "Forward Plus")
-boot_splash/image="uid://dhjy66w6scrrl"
-config/icon="uid://bvaenxmrngxmk"
+boot_splash/fullsize=false
+boot_splash/image="uid://buj8j53soallo"
+config/icon="uid://wywp085p45tj"
 config/windows_native_icon="res://title.ico"
 
 [autoload]
 
-SteamController="*res://Assets/Scripts/steam/steam_controller.gd"
+SteamController="*res://Assets/scripts/steam/steam_controller.gd"
 
 [display]
 

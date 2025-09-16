@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cc5k1bxanktbk"
-path="res://.godot/imported/health_regenerator.png-3ffcbf4d99963481893f86522dc0989d.ctex"
+path="res://.godot/imported/health_regenerator.png-3036ef376f86b51ef73982d32bc37f3c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/Sprites/tiles/health_regenerator.png"
-dest_files=["res://.godot/imported/health_regenerator.png-3ffcbf4d99963481893f86522dc0989d.ctex"]
+source_file="res://Assets/sprites/tiles/health_regenerator.png"
+dest_files=["res://.godot/imported/health_regenerator.png-3036ef376f86b51ef73982d32bc37f3c.ctex"]
 
 [params]
 
