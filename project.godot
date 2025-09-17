@@ -20,7 +20,8 @@ config/windows_native_icon="res://title.ico"
 
 [autoload]
 
-SteamController="*res://Assets/scripts/steam/steam_controller.gd"
+AudioManager="*res://Assets/scripts/autoload/audio_manager.gd"
+SteamController="*res://Assets/scripts/autoload/steam/steam_controller.gd"
 
 [display]
 
