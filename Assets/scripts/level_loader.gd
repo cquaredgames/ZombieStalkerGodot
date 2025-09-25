@@ -3,6 +3,18 @@ extends Node
 
 var tile_size := Vector2i(16, 16)
 
+enum EntityType {
+	# Pickups
+	HEALTH_PICKUP, 
+	AMMO_PICKUP, 
+	KEY_PICKUP, 
+	
+	# Entities
+	PLAYER_START = 20, 
+	END_OF_LEVEL = 21, 
+	ENEMY = 22
+}
+
 func load_level(file_path: String) -> Dictionary:
 	var file = FileAccess.open(file_path, FileAccess.READ)
 	if not file:

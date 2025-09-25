@@ -11,6 +11,7 @@ config_version=5
 [application]
 
 config/name="ZombieStalker"
+config/tags=PackedStringArray("topdown", "zombie")
 run/main_scene="uid://dukt2ltdyys4e"
 config/features=PackedStringArray("4.4", "Forward Plus")
 boot_splash/fullsize=false
@@ -22,6 +23,7 @@ config/windows_native_icon="res://title.ico"
 
 AudioManager="*res://Assets/scripts/autoload/audio_manager.gd"
 SteamController="*res://Assets/scripts/autoload/steam/steam_controller.gd"
+LevelLoader="*res://Assets/scripts/autoload/level_loader.gd"
 
 [display]
 
