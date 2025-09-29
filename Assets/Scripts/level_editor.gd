@@ -11,12 +11,15 @@ const SCREEN_SIZE = Vector2i(20, 10)
 const MAP_SCREENS := Vector2i(4, 6)  # 6 across, 4 down
 
 var level_data = {
-	"screens": {},
-	"entities": []
+	"screens": {
+		"(0,0)": {
+				"entities": []
+		}
+	}
 }
 
 var brush_mode: String = "floor"
-var current_tile_id: int = 1
+var current_tile_id: int = 0
 var current_marker_id: int = 0
 var is_painting_tiles := false
 var is_painting_entity := false
@@ -97,9 +100,8 @@ func _ready():
 	
 	current_tile_id = tile_selector.get_item_id(2)
 	# Connect dropdown changes
-	#tile_selector.item_selected.connect(_on_tile_selected)
-	
-	LevelLoader.load_level_for_editor("res://testlevel.json", tilemap, markers_layer)
+	level_data = LevelLoader.load_level("res://testlevel.json")
+	load_current_screen()
 
 func _input(event: InputEvent):
 	if event.is_action_pressed("quit"):
@@ -108,50 +110,151 @@ func _input(event: InputEvent):
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			is_painting_tiles = event.pressed
 			if event.pressed:
+				var mouse_pos = get_viewport().get_mouse_position()
+
+		# Restrict painting to the tile area (exclude HUD)
+		if event.position.y < SCREEN_SIZE.y * 16 && event.position.x < SCREEN_SIZE.x * 16:
+			if event.button_index == MOUSE_BUTTON_LEFT:
 				_paint_tile(event.position)
 				print(event.position)
-		if event.button_index == MOUSE_BUTTON_RIGHT:
-			is_painting_entity = event.pressed
-			if event.pressed:
-				_place_pickup(event.position)
+				
+			if event.button_index == MOUSE_BUTTON_RIGHT:
+				is_painting_entity = event.pressed
+				if event.pressed:
+					_place_entity(event.position)
 				
 	# Keep painting while moving mouse
 	if event is InputEventMouseMotion and is_painting_tiles:
 		_paint_tile(event.position)
 	if event is InputEventMouseMotion and is_painting_entity:
-		_place_pickup(event.position)
+		_place_entity(event.position)
+
+func _init_screen(screen :String) -> void:
+	# Initialize with empty tiles (fill with -1 meaning "no tile")
+	level_data["screens"][screen] = {
+		"tiles": [],
+		"entities": []
+	}
+	for y in range(SCREEN_SIZE.y): # e.g. 10
+		var row = []
+		for x in range(SCREEN_SIZE.x): # e.g. 20
+			row.append(-1)
+		level_data["screens"][screen]["tiles"].append(row)
 
 func _paint_tile(mouse_pos: Vector2):
 	var local_pos = tilemap.to_local(mouse_pos)
-	var cell = tilemap.local_to_map(local_pos)
+	var cell: Vector2i = tilemap.local_to_map(local_pos)
 	
-	# Paint the selected tile
+	if cell.y >= SCREEN_SIZE.y || cell.x >= SCREEN_SIZE.x:
+		return
+
 	if current_tile_id >= 0:
-		tilemap.set_cell(cell, current_tile_id, Vector2i(0,0))
-		
-#func _place_pickup(pos: Vector2) -> void:
-func _place_pickup(mouse_pos: Vector2i):
-	var local_pos: Vector2 = tilemap.to_local(mouse_pos)
+		# Paint visually
+		tilemap.set_cell(cell, current_tile_id, Vector2i(0, 0))
+
+		# Initialize screen in level_data if it does not exist yet
+		var screen_coords = _get_current_screen_key() 
+		if not level_data["screens"].has(screen_coords):
+			_init_screen(screen_coords)
+
+		# Store tile directly in array
+		level_data["screens"][screen_coords]["tiles"][cell.y][cell.x] = int(current_tile_id)
+
+func _place_entity(mouse_pos: Vector2i) -> void:
+	var local_pos: Vector2i = tilemap.to_local(mouse_pos)
 	var cell: Vector2i = markers_layer.local_to_map(local_pos)
-	# Remove old pickup if one exists at this cell
-	for i in range(level_data["entities"].size()):
-		var pickup = level_data["entities"][i]
-		if pickup["screen"] == current_screen and pickup["cell"] == cell:
-			level_data["entities"].remove_at(i)
+
+	var screen_coords = _get_current_screen_key()
+	if not level_data["screens"].has(screen_coords):
+		_init_screen(screen_coords)
+
+	# Remove old entity in this cell (if any)
+	var entities = level_data["screens"][screen_coords].get("entities", [])
+	for i in range(entities.size()):
+		var entity = entities[i]
+		if LevelLoader.str_to_vec2i(entity["cell"]) == cell:
+			entities.remove_at(i)
 			break
-	
-	# Add new pickup
+
+	# Clear visual marker
 	markers_layer.set_cell(cell)
-	
+
 	if current_entity_type != EntityType.EMPTY:
-		var new_pickup = {
-			"screen": current_screen,
-			"cell": cell,
-			"type": str(current_entity_type) # e.g. "HEALTH", "AMMO", "KEY"
+		var new_entity = {
+			"cell": str(cell),
+			"type": str(current_entity_type)
 		}
-		level_data["entities"].append(new_pickup)
-		markers_layer.set_cell(cell, current_entity_type, Vector2i(0,0))	
-		print("Placed pickup: ", new_pickup)
+
+		match current_entity_type:
+			EntityType.PLAYER_START:
+				# Ensure uniqueness: remove old player start (if it was on this screen)
+				if level_data.has("player_start") and level_data["player_start"]["screen"] == screen_coords:
+					var old_cell = LevelLoader.str_to_vec2i(level_data["player_start"]["cell"])
+					markers_layer.set_cell(old_cell)
+
+				# Save new player start info
+				level_data["starting_screen"] = screen_coords
+				level_data["player_start"] = {
+					"cell": str(cell),
+					"screen": screen_coords
+				}
+
+			_: # Default: normal entity
+				entities.append(new_entity)
+
+		# Draw marker in layer
+		markers_layer.set_cell(cell, current_entity_type, Vector2i(0, 0))
+		print("Placed entity: ", new_entity)
+
+		
+##func _place_entity(pos: Vector2) -> void:
+#func _place_entity(mouse_pos: Vector2i):
+	#var local_pos: Vector2 = tilemap.to_local(mouse_pos)
+	#var cell: Vector2i = markers_layer.local_to_map(local_pos)
+	#
+	## Initialize screen in level_data if it does not exist yet
+	#var screen_coords = _get_current_screen_key()
+	#if not level_data["screens"].has(screen_coords):
+		#_init_screem(screen_coords)
+	#
+	## Remove old pickup if one exists at this cell
+	#print(level_data["screens"][screen_coords])
+	#for i in range(level_data["screens"][screen_coords].get("entities",[]).size()):
+		#var entity = level_data.screens[screen_coords].entities[i]
+		#var entity_cell = LevelLoader.str_to_vec2i(
+			#level_data.screens[screen_coords].entities[i].cell)
+		#if entity_cell == cell:
+			#level_data["screens"][screen_coords]["entities"].remove_at(i)
+			#break
+		#
+	## Add new pickup
+	#markers_layer.set_cell(cell)
+	#
+	#if current_entity_type != EntityType.EMPTY:
+		#var new_entity = {
+			#"cell": str(cell),
+			#"type": str(current_entity_type) # e.g. "HEALTH", "AMMO", "KEY"
+		#}
+		#match current_entity_type:
+			#EntityType.PLAYER_START:
+				## Remove old player start marker from the TileMapLayer
+				#if level_data.has("player_start"):
+					#if level_data["player_start"]["screen"] == _get_current_screen_key():
+						#var player_start_cell = LevelLoader.str_to_vec2i(
+							#level_data["player_start"]["cell"])
+						#markers_layer.set_cell(player_start_cell)
+						#
+				## Set starting screen to the current screen and cell location for marker
+				#level_data["starting_screen"] = _get_current_screen_key()
+				#level_data["player_start"] = {
+					#"cell": new_entity.cell,
+					#"screen": _get_current_screen_key()
+				#}
+			#_: # DEFAULT
+				#level_data["screens"][_get_current_screen_key()]["entities"].append(new_entity)
+			#
+		#markers_layer.set_cell(cell, current_entity_type, Vector2i(0,0))	
+		#print("Placed entity: ", new_entity)
 
 func _on_tile_selected(index: int) -> void:
 	# store which tile the user picked
@@ -160,7 +263,6 @@ func _on_tile_selected(index: int) -> void:
 	
 func _on_pickup_selected(index: int) -> void:
 	current_entity_type = entity_selector.get_item_id(index)
-	$CanvasLayer/ColorRect/Label.text = str(current_entity_type)
 	is_painting_tiles = false
 
 func pickup_type_to_name(t: EntityType) -> String:
@@ -173,6 +275,19 @@ func pickup_type_to_name(t: EntityType) -> String:
 func _on_fill_screen_button_pressed() -> void:
 	if current_tile_id == -1:
 		return
+
+	# Initialize screen in level_data if it does not exist yet
+	var screen_coords = _get_current_screen_key()
+	if not level_data["screens"].has(screen_coords):
+		_init_screen(screen_coords)
+		
+	# Update level_data Dictionary
+	for y in range(SCREEN_SIZE.y): # e.g. 10
+		var row = []
+		for x in range(SCREEN_SIZE.x): # e.g. 20
+			level_data["screens"][_get_current_screen_key()]["tiles"][y][x] = current_tile_id
+		
+	# Update TileMapLayer
 	for y in range(SCREEN_SIZE.y):
 		for x in range(SCREEN_SIZE.x):
 			tilemap.set_cell(Vector2i(x,y), current_tile_id, Vector2i(0,0))
@@ -185,7 +300,7 @@ func update_screen_buttons() -> void:
 	
 func _on_left_pressed() -> void:
 	if current_screen.x > 0:
-		save_current_screen()
+		#save_current_screen()
 		current_screen.x -= 1
 		current_screen_label.text = _get_current_screen_key()
 		load_current_screen()
@@ -193,7 +308,7 @@ func _on_left_pressed() -> void:
 
 func _on_right_pressed() -> void:
 	if current_screen.x < SCREEN_SIZE.x - 1:
-		save_current_screen()
+		#save_current_screen()
 		current_screen.x += 1
 		current_screen_label.text = _get_current_screen_key()
 		load_current_screen()
@@ -201,7 +316,7 @@ func _on_right_pressed() -> void:
 
 func _on_up_pressed() -> void:
 	if current_screen.y > 0:
-		save_current_screen()
+		#save_current_screen()
 		current_screen.y -= 1
 		current_screen_label.text = _get_current_screen_key()
 		load_current_screen()
@@ -209,7 +324,7 @@ func _on_up_pressed() -> void:
 
 func _on_down_pressed() -> void:
 	if current_screen.y < MAP_SCREENS.y - 1:
-		save_current_screen()
+		#save_current_screen()
 		current_screen.y += 1
 		current_screen_label.text = _get_current_screen_key()
 		load_current_screen()
@@ -226,46 +341,33 @@ func save_current_screen() -> void:
 		for x in range(SCREEN_SIZE.x):
 			row.append(tilemap.get_cell_source_id(Vector2i(x,y)))
 		data.append(row)
-	level_data["screens"][key] = data
+	level_data["screens"][key]["tiles"] = data
 	print("saved screen", key)
 	# TODO: save pickups to json file too
 	
+func _on_save_level_pressed() -> void:
+	LevelLoader.save_level("res://testlevel.json", level_data)
+	#save_level()
+
+
 func load_current_screen() -> void:
 	var key = _get_current_screen_key()
 	tilemap.clear()
+	markers_layer.clear()
 	if key in level_data["screens"]:
-		var data = level_data["screens"][key]
+		var data = level_data["screens"][key]["tiles"]
 		for y in range(data.size()):
 			for x in range(data[y].size()):
 				var tile_id = data[y][x]
 				#if tile_id >= 0 && tile_id <10:
 				tilemap.set_cell(Vector2i(x,y), tile_id, Vector2i(0,0))
+		
+		var entities = level_data["screens"][key]["entities"]
+		for e in entities:
+			var cell = LevelLoader.str_to_vec2i(e.cell)
+			markers_layer.set_cell(cell, int(e.type), Vector2i.ZERO)
+			
+		if level_data.player_start.screen == key:
+			var cell = LevelLoader.str_to_vec2i(level_data.player_start.cell)
+			markers_layer.set_cell(cell, EntityType.PLAYER_START, Vector2i.ZERO)
 				
-func save_level() -> void:
-	var file = FileAccess.open("res://testlevel.json", FileAccess.WRITE)
-	if file:
-		var json_text := JSON.stringify(level_data, "\t") # pretty-print with tabs
-		file.store_string(json_text)
-		file.close()
-		print("Level saved to user://testlevel.json")
-	
-
-func load_level() -> void:
-	var file = FileAccess.open("user://testlevel.json", FileAccess.READ)
-	if file:
-		var json_text := file.get_as_text()
-		file.close()
-		
-		var json = JSON.new()
-		var error = json.parse(json_text)
-		
-		if error == OK:
-			level_data = json.data
-			print("Level loaded successfully!")
-		else:
-			print("Failed to parse level file: ", error)
-
-
-func _on_save_level_pressed() -> void:
-	LevelLoader.save_level("res://testlevel.json", tilemap, markers_layer)
-	#save_level()

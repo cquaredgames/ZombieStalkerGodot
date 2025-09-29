@@ -276,11 +276,18 @@ theme_override_font_sizes/font_size = 8
 text = "FILL
 "
 
+[node name="Label" type="Label" parent="CanvasLayer/ColorRect"]
+layout_mode = 0
+offset_left = 192.667
+offset_top = 10.7297
+offset_right = 232.667
+offset_bottom = 33.7297
+
 [node name="SaveLevel" type="Button" parent="CanvasLayer"]
-offset_left = 187.0
-offset_top = 164.0
-offset_right = 234.0
-offset_bottom = 195.0
+offset_left = 186.841
+offset_top = 164.262
+offset_right = 233.841
+offset_bottom = 195.262
 text = "SAVE"
 
 [connection signal="item_selected" from="CanvasLayer/ColorRect/TileSelectorLabel/TileSelector" to="." method="_on_tile_selected"]
