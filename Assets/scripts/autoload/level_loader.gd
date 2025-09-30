@@ -3,10 +3,11 @@ extends Node
 const TILE_SIZE = 16
 
 enum EntityType {
+	EMPTY = -1,
 	# Pickups
-	AMMO_PICKUP,
-	HEALTH_PICKUP,
-	KEY_PICKUP,
+	AMMO_PICKUP = 0,
+	HEALTH_PICKUP = 1,
+	KEY_PICKUP = 2,
 	# Entities
 	PLAYER_START = 20,
 	END_OF_LEVEL = 21,
@@ -35,6 +36,40 @@ static func str_to_vec2i(s: String) -> Vector2i:
 static func cell_to_world(cell: String):
 	var vec: Vector2i = str_to_vec2i(cell)
 	return Vector2(vec.x * TILE_SIZE, vec.y * TILE_SIZE)
+
+static func apply_screen_to_layers(
+	level_data :Dictionary, screen_key :String, 
+	tile_layer :TileMapLayer, _marker_layer :TileMapLayer = null) -> void:
+		if not level_data.has("screens"):
+			push_error("apply_screen_to_layers: No 'screens' key in level_data")
+			return
+		if not level_data["screens"].has(screen_key):
+			push_error("apply_screen_to_layers: Screen %s not found" % screen_key)
+			return
+			
+		var screen_data = level_data["screens"][screen_key]
+		
+		# Clear old tiles
+		tile_layer.clear()
+		if _marker_layer:
+			_marker_layer.clear()
+		
+		# Apply tiles
+		if screen_data.has("tiles"):
+			var tiles: Array = screen_data["tiles"]
+			for y in range(tiles.size()):
+				for x in range(tiles[y].size()):
+					var tile_id :int = int(tiles[y][x])
+					if tile_id >= 0:
+						tile_layer.set_cell(Vector2i(x,y), tile_id, Vector2i.ZERO)
+						
+		# Marker layer is only for editor visualization (optional in runtime)
+		if _marker_layer && screen_data.has("entities"):
+			for entity in screen_data["entities"]:
+				var cell: Vector2i = str_to_vec2i(entity["cell"])
+				var type: int = int(entity["type"])
+				# use entity type enum mapping here if needed
+				_marker_layer.set_cell(cell, type, Vector2i.ZERO)
 
 # -----------------------
 # Saving (used by editor)

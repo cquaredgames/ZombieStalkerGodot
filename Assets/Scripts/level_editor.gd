@@ -23,18 +23,8 @@ var current_tile_id: int = 0
 var current_marker_id: int = 0
 var is_painting_tiles := false
 var is_painting_entity := false
-var occuppied_cells = {}
 
-enum EntityType {
-	# Pickups
-	AMMO_PICKUP, HEALTH_PICKUP, KEY_PICKUP, 
-	# Entities
-	PLAYER_START = 20, END_OF_LEVEL = 21, ENEMY = 22,
-	
-	EMPTY = 40
-}
-
-var current_entity_type = EntityType.EMPTY
+var current_entity_type = LevelLoader.EntityType.EMPTY
 
 func _ready():
 	%CurrentScreenCoords.text = _get_current_screen_coords()
@@ -42,6 +32,7 @@ func _ready():
 	
 	# Initialize TileSelector dropdown control
 	tile_selector.clear()
+	tile_selector.add_item("Blank", 99)
 	tile_selector.add_separator("Barriers")
 	tile_selector.add_icon_item(
 		preload("res://Assets/Sprites/tiles/grey_wall.png"), "Grey Wall", 0)
@@ -60,50 +51,51 @@ func _ready():
 	tile_selector.add_icon_item(
 		preload("res://Assets/Sprites/tiles/health_regenerator.png"), 
 		"Health Reg", 6)
-	tile_selector.add_separator("-------")	
-	tile_selector.add_item("Blank", 99)
+	
 
 	# Initialize PickupSelector dropdown control
 	entity_selector.clear()
-	entity_selector.add_item("Empty", EntityType.EMPTY)
+	entity_selector.add_item("Empty", LevelLoader.EntityType.EMPTY)
 	entity_selector.add_separator("Pickups")
 	entity_selector.add_icon_item(
-		preload("res://Assets/Sprites/pickups/ammo_pickup.png"), "Ammo", EntityType.AMMO_PICKUP)
+		preload("res://Assets/Sprites/pickups/ammo_pickup.png"), 
+		"Ammo", LevelLoader.EntityType.AMMO_PICKUP)
 	entity_selector.add_icon_item(
-		preload("res://Assets/Sprites/pickups/health_pickup.png"), "Health", EntityType.HEALTH_PICKUP)
+		preload("res://Assets/Sprites/pickups/health_pickup.png"), 
+		"Health", LevelLoader.EntityType.HEALTH_PICKUP)
 	entity_selector.add_icon_item(
-		preload("res://Assets/Sprites/pickups/key_pickup.png"), "Key", EntityType.KEY_PICKUP)
+		preload("res://Assets/Sprites/pickups/key_pickup.png"), 
+		"Key", LevelLoader.EntityType.KEY_PICKUP)
 	
 	
 	# Initialize EntitySelector dropdown control
 	entity_selector.add_separator("Entities")
 	#entity_selector.clear()
 	entity_selector.add_icon_item(
-		preload("res://Assets/sprites/entities/start_tile.png"), "Player Start", EntityType.PLAYER_START)
+		preload("res://Assets/sprites/entities/start_tile.png"), 
+		"Player Start", LevelLoader.EntityType.PLAYER_START)
 	entity_selector.add_icon_item(
-		preload("res://Assets/sprites/entities/end_tile.png"), "Level End", EntityType.END_OF_LEVEL)
+		preload("res://Assets/sprites/entities/end_tile.png"), 
+		"Level End", LevelLoader.EntityType.END_OF_LEVEL)
 	entity_selector.add_icon_item(
-		preload("res://Assets/Sprites/player.png"), "Enemy", EntityType.ENEMY)
+		preload("res://Assets/Sprites/player.png"), 
+		"Enemy", LevelLoader.EntityType.ENEMY)
 	
 	current_tile_id = tile_selector.get_item_id(2)
 	# Connect dropdown changes
 	level_data = LevelLoader.load_level("res://testlevel.json")
-	load_current_screen()
+	LevelLoader.apply_screen_to_layers(
+		level_data, _get_current_screen_coords(), tilemap, markers_layer)
 
 func _input(event: InputEvent):
 	if event.is_action_pressed("quit"):
 		get_tree().quit()
 	if event is InputEventMouseButton:
-		#if event.button_index == MOUSE_BUTTON_LEFT:
-	#		is_painting_tiles = event.pressed
-		#	if event.pressed:
-		#		var mouse_pos = get_viewport().get_mouse_position()
-
 		# Restrict painting to the tile area (exclude HUD)
 		if event.position.y < SCREEN_SIZE.y * 16 && event.position.x < SCREEN_SIZE.x * 16:
 			if event.button_index == MOUSE_BUTTON_LEFT:
 				is_painting_tiles = event.pressed
-				_paint_tile(event.position)
+				_place_tile(event.position)
 				print(event.position)
 				
 			if event.button_index == MOUSE_BUTTON_RIGHT:
@@ -113,7 +105,7 @@ func _input(event: InputEvent):
 				
 	# Keep painting while moving mouse
 	if event is InputEventMouseMotion and is_painting_tiles:
-		_paint_tile(event.position)
+		_place_tile(event.position)
 	if event is InputEventMouseMotion and is_painting_entity:
 		_place_entity(event.position)
 
@@ -129,7 +121,7 @@ func _init_screen(screen :String) -> void:
 			row.append(-1)
 		level_data["screens"][screen]["tiles"].append(row)
 
-func _paint_tile(mouse_pos: Vector2):
+func _place_tile(mouse_pos: Vector2):
 	var local_pos = tilemap.to_local(mouse_pos)
 	var cell: Vector2i = tilemap.local_to_map(local_pos)
 	
@@ -168,14 +160,14 @@ func _place_entity(mouse_pos: Vector2i) -> void:
 	# Clear visual marker
 	markers_layer.set_cell(cell)
 
-	if current_entity_type != EntityType.EMPTY:
+	if current_entity_type != LevelLoader.EntityType.EMPTY:
 		var new_entity = {
 			"cell": str(cell),
 			"type": str(current_entity_type)
 		}
 
 		match current_entity_type:
-			EntityType.PLAYER_START:
+			LevelLoader.EntityType.PLAYER_START:
 				# Ensure uniqueness: remove old player start (if it was on this screen)
 				if level_data.has("player_start") and level_data["player_start"]["screen"] == screen_coords:
 					var old_cell = LevelLoader.str_to_vec2i(level_data["player_start"]["cell"])
@@ -195,11 +187,11 @@ func _place_entity(mouse_pos: Vector2i) -> void:
 		markers_layer.set_cell(cell, current_entity_type, Vector2i(0, 0))
 		print("Placed entity: ", new_entity)
 
-func pickup_type_to_name(t: EntityType) -> String:
+func pickup_type_to_name(t: LevelLoader.EntityType) -> String:
 	match t:
-		EntityType.HEALTH_PICKUP: return "health"
-		EntityType.AMMO_PICKUP: return "ammo"
-		EntityType.KEY_PICKUP: return "key"
+		LevelLoader.EntityType.HEALTH_PICKUP: return "health"
+		LevelLoader.EntityType.AMMO_PICKUP: return "ammo"
+		LevelLoader.EntityType.KEY_PICKUP: return "key"
 		_: return "unknown"
 
 func update_screen_buttons() -> void:
@@ -208,32 +200,12 @@ func update_screen_buttons() -> void:
 	%UpButton.disabled = current_screen.y <= 0
 	%DownButton.disabled = current_screen.y >= MAP_SCREENS.y - 1		
 
-func _get_current_screen_coords():
+func _get_current_screen_coords() -> String:
 	return str(current_screen.x) + "," + str(current_screen.y)
 
-func load_current_screen() -> void:
+func _load_current_screen() -> void:
 	var screen_coords = _get_current_screen_coords()
-	tilemap.clear()
-	markers_layer.clear()
-	
-	if screen_coords in level_data["screens"]:
-		# Populate cells in main TileMapLayer for current screen 
-		var tiles = level_data["screens"][screen_coords]["tiles"]
-		for y in range(tiles.size()):
-			for x in range(tiles[y].size()):
-				var tile_id = tiles[y][x]
-				tilemap.set_cell(Vector2i(x,y), tile_id, Vector2i(0,0))
-		
-		# Populate cells in Markers TileMapLayer for current screen
-		var entities = level_data["screens"][screen_coords]["entities"]
-		for e in entities:
-			var cell = LevelLoader.str_to_vec2i(e.cell)
-			markers_layer.set_cell(cell, int(e.type), Vector2i.ZERO)
-			
-		# Set the cell for player start if the current screen contains the player start entity
-		if level_data["player_start"]["screen"] == screen_coords:
-			var cell = LevelLoader.str_to_vec2i(level_data.player_start.cell)
-			markers_layer.set_cell(cell, EntityType.PLAYER_START, Vector2i.ZERO)
+	LevelLoader.apply_screen_to_layers(level_data, screen_coords, tilemap, markers_layer)
 	
 func _on_tile_selected(index: int) -> void:
 	# store which tile the user picked
@@ -248,29 +220,28 @@ func _on_left_pressed() -> void:
 	if current_screen.x > 0:
 		current_screen.x -= 1
 		current_screen_label.text = _get_current_screen_coords()
-		load_current_screen()
+		_load_current_screen()
 	update_screen_buttons()
 
 func _on_right_pressed() -> void:
 	if current_screen.x < SCREEN_SIZE.x - 1:
 		current_screen.x += 1
 		current_screen_label.text = _get_current_screen_coords()
-		load_current_screen()
+		_load_current_screen()
 	update_screen_buttons()
 
 func _on_up_pressed() -> void:
 	if current_screen.y > 0:
 		current_screen.y -= 1
 		current_screen_label.text = _get_current_screen_coords()
-		load_current_screen()
+		_load_current_screen()
 	update_screen_buttons()
 
 func _on_down_pressed() -> void:
 	if current_screen.y < MAP_SCREENS.y - 1:
-		#save_current_screen()
 		current_screen.y += 1
 		current_screen_label.text = _get_current_screen_coords()
-		load_current_screen()
+		_load_current_screen()
 	update_screen_buttons()
 	
 func _on_fill_screen_button_pressed() -> void:
@@ -284,7 +255,6 @@ func _on_fill_screen_button_pressed() -> void:
 		
 	# Update level_data Dictionary
 	for y in range(SCREEN_SIZE.y): # e.g. 10
-		var row = []
 		for x in range(SCREEN_SIZE.x): # e.g. 20
 			level_data["screens"][screen_coords]["tiles"][y][x] = current_tile_id
 		
