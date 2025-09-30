@@ -277,10 +277,11 @@ text = "FILL
 "
 
 [node name="SaveLevel" type="Button" parent="CanvasLayer"]
-offset_left = 187.0
-offset_top = 164.0
-offset_right = 234.0
-offset_bottom = 195.0
+offset_left = 177.808
+offset_top = 174.596
+offset_right = 212.808
+offset_bottom = 198.596
+theme_override_font_sizes/font_size = 11
 text = "SAVE"
 
 [connection signal="item_selected" from="CanvasLayer/ColorRect/TileSelectorLabel/TileSelector" to="." method="_on_tile_selected"]

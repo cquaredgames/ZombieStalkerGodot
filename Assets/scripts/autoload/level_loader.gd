@@ -25,12 +25,16 @@ var entity_scenes := {
 # -----------------------
 # Utility helpers
 # -----------------------
-func vec2i_to_str(v: Vector2i) -> String:
+static func vec2i_to_str(v: Vector2i) -> String:
 	return "%d,%d" % [v.x, v.y]
 
-func str_to_vec2i(s: String) -> Vector2i:
+static func str_to_vec2i(s: String) -> Vector2i:
 	var parts = s.split(",")
 	return Vector2i(int(parts[0]), int(parts[1]))
+	
+static func cell_to_world(cell: String):
+	var vec: Vector2i = str_to_vec2i(cell)
+	return Vector2(vec.x * TILE_SIZE, vec.y * TILE_SIZE)
 
 # -----------------------
 # Saving (used by editor)
@@ -44,34 +48,6 @@ func save_level(path: String, level_data: Dictionary) -> void:
 	if file:
 		file.store_string(JSON.stringify(level_data, "\t")) # with tabs
 		file.close()
-
-#func save_level( path: String, ground_layer: TileMapLayer, marker_layer: TileMapLayer) -> void:
-	#var level_data: Dictionary = {}
-#
-	## Save ground tiles
-	#var ground_tiles: Array = []
-	#for cell in ground_layer.get_used_cells():
-		#var tile_id = ground_layer.get_cell_source_id(cell)
-		#ground_tiles.append({
-			#"pos": Vector2i(cell),
-			#"id": tile_id
-		#})
-	#level_data["tiles"] = ground_tiles
-#
-	## Save markers/entities
-	#var markers: Array = []
-	#for cell in marker_layer.get_used_cells():
-		#var tile_id = marker_layer.get_cell_source_id(cell)
-		#markers.append({
-			#"pos": Vector2i(cell),
-			#"id": tile_id
-		#})
-	#level_data["entities"] = markers
-#
-	## Write JSON file
-	#var file := FileAccess.open(path, FileAccess.WRITE)
-	#file.store_string(JSON.stringify(level_data, "\t"))  # pretty print
-	#file.close()
 
 func _load_file(file_path: String):
 	var file = FileAccess.open(file_path, FileAccess.READ)
@@ -128,22 +104,3 @@ func load_level(path: String) -> Dictionary:
 	else:
 		push_error("Failed to parse JSON: %s" % path)
 		return {}
-	
-#func load_level(file_path: String, tilemap: TileMapLayer, parent: Node) -> void:
-	#var data = _load_file(file_path)
-#
-	## Load tiles
-	#for tile_entry in data.get("tiles", []):
-		#var pos = str_to_vec2i(tile_entry["pos"])
-		#var id = tile_entry["id"]
-		#tilemap.set_cell(pos, id, Vector2i(0,0))
-#
-	## Load entities
-	#for ent_entry in data.get("entities", []):
-		#var pos = str_to_vec2i(ent_entry["pos"])
-		#var ent_type = int(ent_entry["id"])
-#
-		#if entity_scenes.has(ent_type):
-			#var scene = entity_scenes[ent_type].instantiate()
-			#scene.position = pos * TILE_SIZE
-			#parent.add_child(scene)
